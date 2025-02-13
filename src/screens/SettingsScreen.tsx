@@ -60,6 +60,7 @@ const SettingsScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Ejemplo: Mi Tienda"
+        placeholderTextColor="gray"
         value={businessName}
         onChangeText={setBusinessName}
       />
@@ -70,6 +71,7 @@ const SettingsScreen = () => {
       <TextInput
         style={styles.input}
         placeholder="Ejemplo: Juan Pérez"
+        placeholderTextColor="gray"
         value={sellerName}
         onChangeText={setSellerName}
       />

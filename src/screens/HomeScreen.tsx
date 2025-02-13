@@ -116,7 +116,8 @@ function HomeScreen(): React.JSX.Element {
       <View style={styles.itemNameInputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Nombre"
+          placeholder="Item"
+          placeholderTextColor="gray"
           value={item.name}
           onChangeText={text => updateItem(item.id, 'name', text)}
         />
@@ -125,6 +126,7 @@ function HomeScreen(): React.JSX.Element {
         <TextInput
           style={styles.input}
           placeholder="Cantidad"
+          placeholderTextColor="gray"
           keyboardType="numeric"
           value={item.quantity}
           onChangeText={text => updateItem(item.id, 'quantity', text)}
@@ -134,6 +136,7 @@ function HomeScreen(): React.JSX.Element {
         <TextInput
           style={styles.input}
           placeholder="Precio"
+          placeholderTextColor="gray"
           keyboardType="numeric"
           value={item.unitPrice}
           onChangeText={text => updateItem(item.id, 'unitPrice', text)}
@@ -158,6 +161,7 @@ function HomeScreen(): React.JSX.Element {
         <TextInput
           style={styles.customerInput}
           placeholder="Nombre del cliente (opcional)"
+          placeholderTextColor="gray"
           value={customerName}
           onChangeText={setCustomerName}
         />
