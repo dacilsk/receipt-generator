@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Button,
   FlatList,
@@ -32,6 +33,8 @@ const SettingsScreen = () => {
     useState<BluetoothDevice | null>(null);
   const [printerConnected, setPrinterConnected] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('');
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -134,8 +137,8 @@ const SettingsScreen = () => {
   const connectBluetoothDevice = async (
     device: BluetoothDevice,
   ): Promise<boolean> => {
-    console.log('Intentando conectar con', device);
-
+    setLoading(true);
+    setLoadingText('Conectando...');
     try {
       await BluetoothManager.connect(device.address);
       setPrinterConnected(true);
@@ -144,8 +147,7 @@ const SettingsScreen = () => {
         ['printerName', device.name],
         ['printerAddress', device.address],
       ]);
-      console.log('Conectado a', device.name);
-      Alert.alert('Conexión exitosa', `Conectado a: ${device.name}`);
+      setModalVisible(false);
       return true;
     } catch (error) {
       const errorMessage =
@@ -156,7 +158,8 @@ const SettingsScreen = () => {
       Alert.alert('Error de conexión', errorMessage);
       return false;
     } finally {
-      setModalVisible(false);
+      setLoading(false);
+      setLoadingText('');
     }
   };
 
@@ -170,10 +173,6 @@ const SettingsScreen = () => {
     }
 
     if (!printerConnected) {
-      Alert.alert(
-        'Conectando a impresora...',
-        `Intentando conectar a: ${selectedPrinter.name}`,
-      );
       const connectionSuccess = await connectBluetoothDevice(selectedPrinter);
 
       if (!connectionSuccess) {
@@ -181,6 +180,9 @@ const SettingsScreen = () => {
         return;
       }
     }
+
+    setLoading(true);
+    setLoadingText('Imprimiendo...');
 
     try {
       await BluetoothEscposPrinter.printText('Prueba de impresión\n\r', {});
@@ -195,16 +197,14 @@ const SettingsScreen = () => {
           fonttype: 1,
         },
       );
-
-      Alert.alert(
-        'Impresión exitosa',
-        'La prueba de impresión se realizó correctamente.',
-      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Error desconocido';
       console.error('Error al imprimir:', error);
       Alert.alert('Error al imprimir', errorMessage);
+    } finally {
+      setLoading(false);
+      setLoadingText('');
     }
   };
 
@@ -292,6 +292,13 @@ const SettingsScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={loading} transparent animationType="fade">
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>{loadingText}</Text>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -366,6 +373,18 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+  },
+  loadingOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo semi-transparente
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
