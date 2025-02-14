@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Button,
@@ -15,8 +15,8 @@ import {
   View,
 } from 'react-native';
 import {
-  BluetoothEscposPrinter,
   BluetoothDevice,
+  BluetoothEscposPrinter,
   BluetoothManager,
 } from 'react-native-bluetooth-escpos-printer';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -93,19 +93,17 @@ const SettingsScreen = () => {
     }
   };
 
-  const parseEnableBluetoothResponse = async (response: any[]) => {
-    const pairedDevices: BluetoothDevice[] = response
-      ?.map(value => {
+  const parseEnableBluetoothResponse = (response: any[]): BluetoothDevice[] => {
+    return response
+      .map(value => {
         try {
           return JSON.parse(value);
         } catch (error) {
-          console.error('Error parsing device', value, error);
+          console.error('Error parsing device:', value, error);
           return null;
         }
       })
-      .filter(device => device !== null); // filter out any items that failed to parse
-
-    return pairedDevices;
+      .filter(Boolean); // Filtra valores nulos automáticamente
   };
 
   // Buscar dispositivos Bluetooth
@@ -133,31 +131,55 @@ const SettingsScreen = () => {
     await connectBluetoothDevice(device);
   };
 
-  const connectBluetoothDevice = async (device: BluetoothDevice) => {
-    console.log('Connecting to', device);
-    await BluetoothManager.connect(device.address)
-      .then(() => {
-        console.log('Connected to', device.name);
-        setPrinterConnected(true);
-        setSelectedPrinter(device);
-        AsyncStorage.setItem('printerName', device.name);
-        AsyncStorage.setItem('printerAddress', device.address);
-        setModalVisible(false);
-      })
-      .catch(err => {
-        console.log('Connection error:', err);
-        Alert.alert('Connection Error', err.message || err);
-      });
+  const connectBluetoothDevice = async (
+    device: BluetoothDevice,
+  ): Promise<boolean> => {
+    console.log('Intentando conectar con', device);
+
+    try {
+      await BluetoothManager.connect(device.address);
+      setPrinterConnected(true);
+      setSelectedPrinter(device);
+      await AsyncStorage.multiSet([
+        ['printerName', device.name],
+        ['printerAddress', device.address],
+      ]);
+      console.log('Conectado a', device.name);
+      Alert.alert('Conexión exitosa', `Conectado a: ${device.name}`);
+      return true;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'No se pudo conectar a la impresora.';
+      console.error('Error de conexión con', device.name, error);
+      Alert.alert('Error de conexión', errorMessage);
+      return false;
+    } finally {
+      setModalVisible(false);
+    }
   };
 
   const testPrinter = async () => {
     if (!selectedPrinter) {
-      Alert.alert('No hay impresora seleccionada');
+      Alert.alert(
+        'No hay impresora seleccionada',
+        'Por favor, selecciona una impresora antes de probar.',
+      );
       return;
     }
 
     if (!printerConnected) {
-      await connectBluetoothDevice(selectedPrinter);
+      Alert.alert(
+        'Conectando a impresora...',
+        `Intentando conectar a: ${selectedPrinter.name}`,
+      );
+      const connectionSuccess = await connectBluetoothDevice(selectedPrinter);
+
+      if (!connectionSuccess) {
+        Alert.alert('Error', 'No se pudo conectar a la impresora.');
+        return;
+      }
     }
 
     try {
@@ -173,9 +195,16 @@ const SettingsScreen = () => {
           fonttype: 1,
         },
       );
+
+      Alert.alert(
+        'Impresión exitosa',
+        'La prueba de impresión se realizó correctamente.',
+      );
     } catch (error) {
-      console.error('Error al imprimir: ' + error);
-      Alert.alert('Error al imprimir: ' + error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error desconocido';
+      console.error('Error al imprimir:', error);
+      Alert.alert('Error al imprimir', errorMessage);
     }
   };
 
