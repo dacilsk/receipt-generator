@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -31,7 +31,6 @@ const SettingsScreen = () => {
   );
   const [selectedPrinter, setSelectedPrinter] =
     useState<BluetoothDevice | null>(null);
-  const [printerConnected, setPrinterConnected] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('');
@@ -141,7 +140,6 @@ const SettingsScreen = () => {
     setLoadingText('Conectando...');
     try {
       await BluetoothManager.connect(device.address);
-      setPrinterConnected(true);
       setSelectedPrinter(device);
       await AsyncStorage.multiSet([
         ['printerName', device.name],
@@ -154,7 +152,7 @@ const SettingsScreen = () => {
         error instanceof Error
           ? error.message
           : 'No se pudo conectar a la impresora.';
-      console.error('Error de conexión con', device.name, error);
+      console.error('Error de conexión con', device.name, device.address, error);
       Alert.alert('Error de conexión', errorMessage);
       return false;
     } finally {
@@ -171,6 +169,8 @@ const SettingsScreen = () => {
       );
       return;
     }
+
+    const printerConnected = await BluetoothManager.isDeviceConnected();
 
     if (!printerConnected) {
       const connectionSuccess = await connectBluetoothDevice(selectedPrinter);
