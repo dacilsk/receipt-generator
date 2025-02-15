@@ -29,13 +29,44 @@ declare module 'react-native-bluetooth-escpos-printer' {
     static readonly width58: number;
     static readonly width80: number;
 
+    // Constantes adicionales
+    static readonly ALIGN: {
+      LEFT: 0;
+      CENTER: 1;
+      RIGHT: 2;
+    };
+
+    static readonly ERROR_CORRECTION: {
+      L: 1;
+      M: 0;
+      Q: 3;
+      H: 2;
+    };
+
+    static readonly BARCODETYPE: {
+      UPC_A: 65;
+      UPC_E: 66;
+      JAN13: 67;
+      JAN8: 68;
+      CODE39: 69;
+      ITF: 70;
+      CODABAR: 71;
+      CODE93: 72;
+      CODE128: 73;
+    };
+
+    static readonly ROTATION: {
+      OFF: 0;
+      ON: 1;
+    };
+
     // Métodos principales
     static printerInit(): Promise<void>;
     static printAndFeed(feed: number): Promise<void>;
     static printerLeftSpace(sp: number): Promise<void>;
     static printerLineSpace(sp: number): Promise<void>;
     static printerUnderLine(line: 0 | 1 | 2): Promise<void>;
-    static printerAlign(align: 0 | 1 | 2): Promise<void>;
+    static printerAlign(align: number): Promise<void>;
     static printText(text: string, options?: PrintTextOptions): Promise<void>;
     static printColumn(
       columnWidths: number[],
