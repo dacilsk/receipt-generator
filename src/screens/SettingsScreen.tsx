@@ -152,7 +152,12 @@ const SettingsScreen = () => {
         error instanceof Error
           ? error.message
           : 'No se pudo conectar a la impresora.';
-      console.error('Error de conexión con', device.name, device.address, error);
+      console.error(
+        'Error de conexión con',
+        device.name,
+        device.address,
+        error,
+      );
       Alert.alert('Error de conexión', errorMessage);
       return false;
     } finally {
@@ -170,9 +175,10 @@ const SettingsScreen = () => {
       return;
     }
 
-    const printerConnected = await BluetoothManager.isDeviceConnected();
+    const connectedDeviceAddress =
+      await BluetoothManager.getConnectedDeviceAddress();
 
-    if (!printerConnected) {
+    if (connectedDeviceAddress !== selectedPrinter.address) {
       const connectionSuccess = await connectBluetoothDevice(selectedPrinter);
 
       if (!connectionSuccess) {
@@ -278,7 +284,6 @@ const SettingsScreen = () => {
             <FlatList
               data={bluetoothDevices}
               keyExtractor={item => item.address}
-              // style={{ maxHeight: 300 }}
               renderItem={({item}) => (
                 <TouchableOpacity
                   style={styles.deviceItem}
