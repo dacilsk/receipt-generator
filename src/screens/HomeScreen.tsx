@@ -1,15 +1,28 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Button,
   FlatList,
   ListRenderItem,
+  Modal,
+  PermissionsAndroid,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import {
+  BluetoothDevice,
+  BluetoothEscposPrinter,
+  BluetoothManager,
+} from 'react-native-bluetooth-escpos-printer';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import {StringUtils} from '../utils/StringUtils';
+import {formatDate} from '../utils/DateUtils';
 
 // Definimos la estructura de un ítem
 interface Item {
@@ -24,6 +37,8 @@ function HomeScreen(): React.JSX.Element {
   const [customerName, setCustomerName] = useState<string>('');
   const [items, setItems] = useState<Item[]>([]);
   const [total, setTotal] = useState<number>(0);
+  const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('');
 
   // Función para agregar un nuevo ítem vacío
   const addItem = () => {
@@ -88,6 +103,178 @@ function HomeScreen(): React.JSX.Element {
       calculateTotalVenta(updatedItems); // Recalcular el total de la venta después de eliminar
       return updatedItems;
     });
+  };
+
+  const printReceipt = async () => {
+    setLoading(true);
+    setLoadingText('Imprimiendo Ticket...');
+
+    try {
+      const storedBusinessName = await AsyncStorage.getItem('businessName');
+      const storedSellerName = await AsyncStorage.getItem('sellerName');
+      const storedPrinterName = await AsyncStorage.getItem('printerName');
+      const storedPrinterAddress = await AsyncStorage.getItem('printerAddress');
+
+      let selectedPrinter: BluetoothDevice | undefined =
+        StringUtils.isNotEmpty(storedPrinterName) &&
+        StringUtils.isNotEmpty(storedPrinterAddress)
+          ? {
+              name: storedPrinterName as string,
+              address: storedPrinterAddress as string,
+            }
+          : undefined;
+
+      if (!selectedPrinter) {
+        Alert.alert('Error', 'Por favor, configura una impresora');
+        throw new Error('Impresora no configurada');
+      }
+
+      // checar si la impresora está conectada, si no, conectarla
+      const connectedDeviceAddress =
+        await BluetoothManager.getConnectedDeviceAddress();
+      if (connectedDeviceAddress !== selectedPrinter.address) {
+        const hasPermission: boolean = await requestBluetoothPermission();
+        if (!hasPermission) {
+          Alert.alert('Permiso de Bluetooth denegado');
+          throw new Error('Permiso de Bluetooth denegado');
+        }
+        await BluetoothManager.connect(selectedPrinter.address);
+      }
+
+      // Imprimir encabezado
+      await BluetoothEscposPrinter.printerAlign(
+        BluetoothEscposPrinter.ALIGN.CENTER,
+      );
+
+      // Nombre del negocio (si está disponible)
+      if (StringUtils.isNotEmpty(storedBusinessName)) {
+        await BluetoothEscposPrinter.setBlob(0);
+        await BluetoothEscposPrinter.printText(`${storedBusinessName}\n\r`, {
+          widthtimes: 1,
+          heigthtimes: 1,
+          fonttype: 1,
+        });
+      }
+
+      await BluetoothEscposPrinter.setBlob(0);
+      await BluetoothEscposPrinter.printText('--- Ticket De Venta ---\n\r', {});
+      await BluetoothEscposPrinter.printerAlign(
+        BluetoothEscposPrinter.ALIGN.LEFT,
+      );
+
+      // Nombre del cliente (si está disponible)
+      if (StringUtils.isNotEmpty(customerName)) {
+        await BluetoothEscposPrinter.printText(
+          `Cliente: ${customerName}\n\r`,
+          {},
+        );
+      }
+
+      await BluetoothEscposPrinter.printText(
+        'Fecha：' + formatDate(new Date(), 'DD/MM/YYYY HH:mm:ss') + '\n\r',
+        {},
+      );
+
+      // Nombre del vendedor (si está disponible)
+      if (StringUtils.isNotEmpty(storedSellerName)) {
+        await BluetoothEscposPrinter.printText(
+          `Vendedor: ${storedSellerName}\n\r`,
+          {},
+        );
+      }
+
+      // Imprimir detalles de los ítems
+      await BluetoothEscposPrinter.printText(
+        '--------------------------------\n\r',
+        {},
+      );
+
+      let columnWidths = [12, 6, 6, 8];
+      let columnAligns = [
+        BluetoothEscposPrinter.ALIGN.LEFT,
+        BluetoothEscposPrinter.ALIGN.CENTER,
+        BluetoothEscposPrinter.ALIGN.CENTER,
+        BluetoothEscposPrinter.ALIGN.RIGHT,
+      ];
+
+      await BluetoothEscposPrinter.printColumn(
+        columnWidths,
+        columnAligns,
+        ['Producto', 'Canti', 'Preci', 'Importe'],
+        {},
+      );
+
+      items.forEach(async item => {
+        await BluetoothEscposPrinter.printColumn(
+          columnWidths,
+          columnAligns,
+          [item.name, item.quantity, item.unitPrice, item.total.toString()],
+          {},
+        );
+      });
+
+      // Imprimir total
+      await BluetoothEscposPrinter.printerAlign(
+        BluetoothEscposPrinter.ALIGN.CENTER,
+      );
+      await BluetoothEscposPrinter.printText('\n\r', {});
+      await BluetoothEscposPrinter.printText(
+        '--------------------------------\n\r',
+        {},
+      );
+      await BluetoothEscposPrinter.printText(
+        `\nTotal: $${total.toFixed(2)}\n`,
+        {},
+      );
+      await BluetoothEscposPrinter.printText('\n\r', {});
+      await BluetoothEscposPrinter.printText(
+        '¡Gracias por su compra!\n\r\n\r',
+        {encoding: 'utf-8'},
+      );
+      await BluetoothEscposPrinter.printerAlign(
+        BluetoothEscposPrinter.ALIGN.LEFT,
+      );
+
+      // Finalizar impresión y cortar papel
+      BluetoothEscposPrinter.cutOnePoint();
+    } catch (e) {
+      console.error('Error al imprimir:', e);
+      Alert.alert('Error', 'Hubo un problema al imprimir el ticket');
+    } finally {
+      setLoading(false);
+      setLoadingText('');
+    }
+  };
+
+  // Solicitar permisos Bluetooth
+  const requestBluetoothPermission = async () => {
+    if (Platform.OS === 'android') {
+      if (Platform.Version >= 31) {
+        // Android 12+ (API 31+)
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        ]);
+        return (
+          granted['android.permission.BLUETOOTH_SCAN'] ===
+            PermissionsAndroid.RESULTS.GRANTED &&
+          granted['android.permission.BLUETOOTH_CONNECT'] ===
+            PermissionsAndroid.RESULTS.GRANTED
+        );
+      } else {
+        // Android 10-11
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+    } else {
+      // iOS
+      // const result = await request(PERMISSIONS.IOS.BLUETOOTH_PERIPHERAL);
+      // return result === RESULTS.GRANTED;
+      Alert.alert('Permiso de Bluetooth para iOS no configurados');
+      return false;
+    }
   };
 
   const renderListHeader = () => (
@@ -190,12 +377,16 @@ function HomeScreen(): React.JSX.Element {
           <Text style={styles.totalVentaText}>Total: ${total.toFixed(2)}</Text>
 
           {/* Botón de Imprimir */}
-          <Button
-            title="Imprimir Ticket"
-            onPress={() => console.log('Imprimir...')}
-          />
+          <Button title="Imprimir Ticket" onPress={printReceipt} />
         </View>
       )}
+
+      <Modal visible={loading} transparent animationType="fade">
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>{loadingText}</Text>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -306,6 +497,18 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     marginLeft: 5,
+  },
+  loadingOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo semi-transparente
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
