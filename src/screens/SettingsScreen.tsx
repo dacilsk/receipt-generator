@@ -196,13 +196,14 @@ const SettingsScreen = () => {
       await BluetoothEscposPrinter.printText(
         '¡Impresora conectada correctamente!\n\r',
         {
-          encoding: 'GBK',
+          encoding: 'UTF-8',
           codepage: 0,
           widthtimes: 1,
           heigthtimes: 1,
           fonttype: 1,
         },
       );
+      BluetoothEscposPrinter.cutOnePoint();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Error desconocido';
