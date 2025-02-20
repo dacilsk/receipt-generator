@@ -100,40 +100,78 @@ function HomeScreen(): React.JSX.Element {
   };
 
   const printReceipt = async () => {
+    const storedPrinterName = await AsyncStorage.getItem('printerName');
+    const storedPrinterAddress = await AsyncStorage.getItem('printerAddress');
+
+    let selectedPrinter: BluetoothDevice | undefined =
+      StringUtils.isNotEmpty(storedPrinterName) &&
+      StringUtils.isNotEmpty(storedPrinterAddress)
+        ? {
+            name: storedPrinterName as string,
+            address: storedPrinterAddress as string,
+          }
+        : undefined;
+
+    if (!selectedPrinter) {
+      Alert.alert('Error', 'Por favor, configura una impresora');
+      return;
+    }
+
+    // checar si la impresora está conectada, si no, conectarla
+    const connectedDeviceAddress =
+      await BluetoothManager.getConnectedDeviceAddress();
+    if (connectedDeviceAddress !== selectedPrinter.address) {
+      const hasPermission: boolean = await requestBluetoothPermission();
+      if (!hasPermission) {
+        Alert.alert('Permiso de Bluetooth denegado');
+        return;
+      }
+      await BluetoothManager.connect(selectedPrinter.address);
+    }
+
+    // Verificar si hay campos vacíos en HomeScreen
+    let showConfirmationAlert: boolean = false;
+
+    items.forEach((item: Item) => {
+      if (
+        StringUtils.isEmpty(item.name) ||
+        StringUtils.isEmpty(item.quantity) ||
+        StringUtils.isEmpty(item.unitPrice)
+      ) {
+        showConfirmationAlert = true;
+      }
+    });
+
+    if (StringUtils.isEmpty(customerName)) {
+      showConfirmationAlert = true;
+    }
+
+    if (showConfirmationAlert) {
+      Alert.alert(
+        'Algunos campos no contienen información',
+        '¿Desea continuar con la impresión?',
+        [
+          {text: 'No', style: 'cancel'},
+          {
+            text: 'Sí',
+            onPress: async () => {
+              await executePrint();
+            },
+          },
+        ],
+      );
+    } else {
+      await executePrint();
+    }
+  };
+
+  const executePrint = async () => {
     setLoading(true);
     setLoadingText('Imprimiendo Ticket...');
 
     try {
       const storedBusinessName = await AsyncStorage.getItem('businessName');
       const storedSellerName = await AsyncStorage.getItem('sellerName');
-      const storedPrinterName = await AsyncStorage.getItem('printerName');
-      const storedPrinterAddress = await AsyncStorage.getItem('printerAddress');
-
-      let selectedPrinter: BluetoothDevice | undefined =
-        StringUtils.isNotEmpty(storedPrinterName) &&
-        StringUtils.isNotEmpty(storedPrinterAddress)
-          ? {
-              name: storedPrinterName as string,
-              address: storedPrinterAddress as string,
-            }
-          : undefined;
-
-      if (!selectedPrinter) {
-        Alert.alert('Error', 'Por favor, configura una impresora');
-        throw new Error('Impresora no configurada');
-      }
-
-      // checar si la impresora está conectada, si no, conectarla
-      const connectedDeviceAddress =
-        await BluetoothManager.getConnectedDeviceAddress();
-      if (connectedDeviceAddress !== selectedPrinter.address) {
-        const hasPermission: boolean = await requestBluetoothPermission();
-        if (!hasPermission) {
-          Alert.alert('Permiso de Bluetooth denegado');
-          throw new Error('Permiso de Bluetooth denegado');
-        }
-        await BluetoothManager.connect(selectedPrinter.address);
-      }
 
       // Imprimir encabezado
       await BluetoothEscposPrinter.printerAlign(
