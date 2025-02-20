@@ -21,8 +21,8 @@ import {
   BluetoothManager,
 } from 'react-native-bluetooth-escpos-printer';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import {StringUtils} from '../utils/StringUtils';
 import {formatDate} from '../utils/DateUtils';
+import {StringUtils} from '../utils/StringUtils';
 
 // Definimos la estructura de un ítem
 interface Item {
@@ -58,7 +58,7 @@ function HomeScreen(): React.JSX.Element {
 
         // Allow user input, but validate numbers when they finish typing
         if (field === 'quantity' || field === 'unitPrice') {
-          const validValue = validatePositiveNumber(value);
+          const validValue = StringUtils.validatePositiveNumber(value);
           return {
             ...item,
             [field]: validValue,
@@ -79,12 +79,6 @@ function HomeScreen(): React.JSX.Element {
       calculateTotalVenta(updatedItems);
       return updatedItems;
     });
-  };
-
-  // Allow numbers greater than 0, including decimals
-  const validatePositiveNumber = (value: string) => {
-    const regex = /^(?:0|[1-9]\d*)?(?:\.\d*)?$/;
-    return regex.test(value) ? value : '';
   };
 
   const calculateTotalItem = (quantity: number, unitPrice: number) => {
@@ -149,11 +143,15 @@ function HomeScreen(): React.JSX.Element {
       // Nombre del negocio (si está disponible)
       if (StringUtils.isNotEmpty(storedBusinessName)) {
         await BluetoothEscposPrinter.setBlob(0);
-        await BluetoothEscposPrinter.printText(`${storedBusinessName}\n\r`, {
-          widthtimes: 1,
-          heigthtimes: 1,
-          fonttype: 1,
-        });
+        await BluetoothEscposPrinter.printText(
+          `${StringUtils.removeNonASCII(storedBusinessName as string)}\n\r`,
+          {
+            encoding: 'UTF-8',
+            widthtimes: 1,
+            heigthtimes: 1,
+            fonttype: 1,
+          },
+        );
       }
 
       await BluetoothEscposPrinter.setBlob(0);
@@ -165,8 +163,10 @@ function HomeScreen(): React.JSX.Element {
       // Nombre del cliente (si está disponible)
       if (StringUtils.isNotEmpty(customerName)) {
         await BluetoothEscposPrinter.printText(
-          `Cliente: ${customerName}\n\r`,
-          {},
+          `Cliente: ${StringUtils.removeNonASCII(customerName as string)}\n\r`,
+          {
+            encoding: 'UTF-8',
+          },
         );
       }
 
@@ -178,8 +178,10 @@ function HomeScreen(): React.JSX.Element {
       // Nombre del vendedor (si está disponible)
       if (StringUtils.isNotEmpty(storedSellerName)) {
         await BluetoothEscposPrinter.printText(
-          `Vendedor: ${storedSellerName}\n\r`,
-          {},
+          `Vendedor: ${StringUtils.removeNonASCII(
+            storedSellerName as string,
+          )}\n\r`,
+          {encoding: 'UTF-8'},
         );
       }
 
@@ -192,24 +194,35 @@ function HomeScreen(): React.JSX.Element {
       let columnWidths = [12, 6, 6, 8];
       let columnAligns = [
         BluetoothEscposPrinter.ALIGN.LEFT,
-        BluetoothEscposPrinter.ALIGN.CENTER,
-        BluetoothEscposPrinter.ALIGN.CENTER,
+        BluetoothEscposPrinter.ALIGN.LEFT,
+        BluetoothEscposPrinter.ALIGN.LEFT,
         BluetoothEscposPrinter.ALIGN.RIGHT,
       ];
 
       await BluetoothEscposPrinter.printColumn(
         columnWidths,
         columnAligns,
-        ['Producto', 'Canti', 'Preci', 'Importe'],
+        ['Producto', 'Cant', 'Prec', 'Importe'],
         {},
       );
 
       items.forEach(async item => {
+        const itemName = StringUtils.truncateString(
+          StringUtils.removeNonASCII(item.name),
+          11,
+        );
+        const quantity = StringUtils.isPositiveNumber(item.quantity)
+          ? Number(item.quantity).toFixed(2)
+          : '';
+        const unitPrice = StringUtils.isPositiveNumber(item.unitPrice)
+          ? Number(item.unitPrice).toFixed(2)
+          : '';
+        const totalItem = item.total ? item.total.toFixed(2) : '0.00';
         await BluetoothEscposPrinter.printColumn(
           columnWidths,
           columnAligns,
-          [item.name, item.quantity, item.unitPrice, item.total.toString()],
-          {},
+          [itemName, quantity, unitPrice, totalItem],
+          {encoding: 'UTF-8'},
         );
       });
 
@@ -228,8 +241,8 @@ function HomeScreen(): React.JSX.Element {
       );
       await BluetoothEscposPrinter.printText('\n\r', {});
       await BluetoothEscposPrinter.printText(
-        '¡Gracias por su compra!\n\r\n\r',
-        {encoding: 'utf-8'},
+        '!Gracias por su compra!\n\r\n\r',
+        {encoding: 'UTF-8'},
       );
       await BluetoothEscposPrinter.printerAlign(
         BluetoothEscposPrinter.ALIGN.LEFT,
