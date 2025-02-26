@@ -1,12 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {useState} from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Button,
   FlatList,
   ListRenderItem,
-  Modal,
   PermissionsAndroid,
   Platform,
   StyleSheet,
@@ -21,6 +19,7 @@ import {
   BluetoothManager,
 } from 'react-native-bluetooth-escpos-printer';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import LoadingModal from '../components/LoadingModal';
 import {formatDate} from '../utils/DateUtils';
 import {StringUtils} from '../utils/StringUtils';
 
@@ -432,12 +431,7 @@ function HomeScreen(): React.JSX.Element {
         </View>
       )}
 
-      <Modal visible={loading} transparent animationType="fade">
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>{loadingText}</Text>
-        </View>
-      </Modal>
+      <LoadingModal loading={loading} loadingText={loadingText} />
     </View>
   );
 }
@@ -548,18 +542,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     marginLeft: 5,
-  },
-  loadingOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo semi-transparente
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
 

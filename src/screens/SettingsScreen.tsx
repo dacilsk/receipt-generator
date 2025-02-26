@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Button,
   FlatList,
@@ -13,7 +12,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import {
   BluetoothDevice,
@@ -21,6 +20,7 @@ import {
   BluetoothManager,
 } from 'react-native-bluetooth-escpos-printer';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import LoadingModal from '../components/LoadingModal';
 // import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 
 const SettingsScreen = () => {
@@ -299,12 +299,7 @@ const SettingsScreen = () => {
         </View>
       </Modal>
 
-      <Modal visible={loading} transparent animationType="fade">
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>{loadingText}</Text>
-        </View>
-      </Modal>
+      <LoadingModal loading={loading} loadingText={loadingText} />
     </ScrollView>
   );
 };
@@ -379,18 +374,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
-  },
-  loadingOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo semi-transparente
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });
 
