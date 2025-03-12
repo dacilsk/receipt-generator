@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, {useState} from 'react';
 import {
   Alert,
-  Button,
   FlatList,
   ListRenderItem,
   PermissionsAndroid,
@@ -96,6 +95,19 @@ function HomeScreen(): React.JSX.Element {
       calculateTotalVenta(updatedItems); // Recalcular el total de la venta después de eliminar
       return updatedItems;
     });
+  };
+
+  const clearAll = () => {
+    Alert.alert('Borrar todo', '¿Desea continuar?', [
+      {text: 'No', style: 'cancel'},
+      {
+        text: 'Sí',
+        onPress: async () => {
+          setItems([]);
+          setCustomerName('');
+        },
+      },
+    ]);
   };
 
   const printReceipt = async () => {
@@ -341,7 +353,7 @@ function HomeScreen(): React.JSX.Element {
   const renderListEmpty = () => (
     <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>No hay ítems en la lista</Text>
-      <TouchableOpacity style={styles.addButton} onPress={addItem}>
+      <TouchableOpacity style={styles.addButtonEmptyList} onPress={addItem}>
         <Icon name="add" size={20} color="white" />
         <Text style={styles.addButtonText}>Agregar ítem</Text>
       </TouchableOpacity>
@@ -415,8 +427,14 @@ function HomeScreen(): React.JSX.Element {
 
       {items.length > 0 && (
         <View>
-          {/* Botón para agregar ítem */}
-          <View style={styles.addButtonContainer}>
+          <View style={styles.buttonRow}>
+            {/* Botón para borrar todo */}
+            <TouchableOpacity style={styles.clearButton} onPress={clearAll}>
+              <Icon name="delete" size={20} color="white" />
+              <Text style={styles.addButtonText}>Borrar Todo</Text>
+            </TouchableOpacity>
+
+            {/* Botón para agregar ítem */}
             <TouchableOpacity style={styles.addButton} onPress={addItem}>
               <Icon name="add" size={20} color="white" />
               <Text style={styles.addButtonText}>Agregar ítem</Text>
@@ -427,7 +445,10 @@ function HomeScreen(): React.JSX.Element {
           <Text style={styles.totalVentaText}>Total: ${total.toFixed(2)}</Text>
 
           {/* Botón de Imprimir */}
-          <Button title="Imprimir Ticket" onPress={printReceipt} />
+          <TouchableOpacity style={styles.printButton} onPress={printReceipt}>
+            <Icon name="print" size={20} color="white" />
+            <Text style={styles.printButtonText}>Imprimir Ticket</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -522,26 +543,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+  addButtonEmptyList: {
+    backgroundColor: '#007bff',
+    padding: 12,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   totalVentaText: {
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 10,
   },
-  addButtonContainer: {
-    alignItems: 'center',
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   addButton: {
     backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
+    padding: 12,
+    borderRadius: 4,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    marginLeft: 4,
   },
   addButtonText: {
     color: 'white',
     fontSize: 16,
     marginLeft: 5,
+  },
+  clearButton: {
+    backgroundColor: '#f44336',
+    padding: 12,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    marginRight: 4,
+  },
+  printButton: {
+    backgroundColor: '#007bff',
+    padding: 12,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  printButtonText: {
+    color: 'white',
+    fontSize: 16,
+    marginLeft: 8,
   },
 });
 
