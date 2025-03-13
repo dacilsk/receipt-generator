@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   ListRenderItem,
   PermissionsAndroid,
   Platform,
@@ -37,16 +38,34 @@ function HomeScreen(): React.JSX.Element {
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('');
+  const inputRef = useRef(null);
+  const flatListRef = useRef(null);
 
-  // Función para agregar un nuevo ítem vacío
+  useEffect(() => {
+    setTimeout(() => {
+      if (inputRef.current && items.length > 0) {
+        inputRef.current.focus();
+      }
+    }, 0);
+  }, [items]);
+
   const addItem = () => {
-    setItems([
-      ...items,
-      {id: Date.now(), name: '', quantity: '', unitPrice: '', total: 0},
-    ]);
+    const newItem = {
+      id: Date.now(),
+      name: '',
+      quantity: '',
+      unitPrice: '',
+      total: 0,
+    };
+    setItems([...items, newItem]);
+
+    setTimeout(() => {
+      if (flatListRef.current) {
+        flatListRef.current.scrollToEnd({animated: true});
+      }
+    }, 300);
   };
 
-  // Función para actualizar un ítem
   const updateItem = (id: number, field: keyof Item, value: string) => {
     setItems(prevItems => {
       const updatedItems = prevItems.map(item => {
@@ -83,7 +102,6 @@ function HomeScreen(): React.JSX.Element {
     return quantity > 0 ? quantity * unitPrice : unitPrice;
   };
 
-  // Función para calcular el total de la venta
   const calculateTotalVenta = (itemsList: Item[]) => {
     const totalAmount = itemsList.reduce((sum, item) => sum + item.total, 0);
     setTotal(totalAmount);
@@ -340,71 +358,7 @@ function HomeScreen(): React.JSX.Element {
   };
 
   const renderListHeader = () => (
-    <View style={styles.headerRowContainer}>
-      <Text style={[styles.headerColumnText, styles.headerColumnNameText]}>
-        Item
-      </Text>
-      <Text style={[styles.headerColumnText]}>Cantidad</Text>
-      <Text style={[styles.headerColumnText]}>Precio</Text>
-      <Text style={[styles.headerColumnText]}>Importe</Text>
-    </View>
-  );
-
-  const renderListEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>No hay ítems en la lista</Text>
-      <TouchableOpacity style={styles.addButtonEmptyList} onPress={addItem}>
-        <Icon name="add" size={20} color="white" />
-        <Text style={styles.addButtonText}>Agregar ítem</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderRowItem: ListRenderItem<Item> = ({item}) => (
-    <View style={styles.itemRowContainer}>
-      <View style={styles.itemNameInputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Item"
-          placeholderTextColor="gray"
-          value={item.name}
-          onChangeText={text => updateItem(item.id, 'name', text)}
-        />
-      </View>
-      <View style={styles.itemInputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Cantidad"
-          placeholderTextColor="gray"
-          keyboardType="numeric"
-          value={item.quantity}
-          onChangeText={text => updateItem(item.id, 'quantity', text)}
-        />
-      </View>
-      <View style={styles.itemInputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Precio"
-          placeholderTextColor="gray"
-          keyboardType="numeric"
-          value={item.unitPrice}
-          onChangeText={text => updateItem(item.id, 'unitPrice', text)}
-        />
-      </View>
-      <View style={styles.itemInputContainer}>
-        <Text style={styles.totalItemText}>{item.total.toFixed(2)}</Text>
-      </View>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => deleteItem(item.id)}>
-        <Icon name="delete" size={15} color="#fff" />
-      </TouchableOpacity>
-    </View>
-  );
-
-  return (
-    <View style={styles.mainContainer}>
-      {/* Campo para el nombre del cliente */}
+    <View>
       <View style={styles.customerContainer}>
         <Text style={styles.customerLabel}>Cliente:</Text>
         <TextInput
@@ -415,45 +369,119 @@ function HomeScreen(): React.JSX.Element {
           onChangeText={setCustomerName}
         />
       </View>
+      <View style={styles.headerColumnsContainer}>
+        <Text style={[styles.headerColumnText, styles.headerColumnNameText]}>
+          Item
+        </Text>
+        <Text style={[styles.headerColumnText]}>Cantidad</Text>
+        <Text style={[styles.headerColumnText]}>Precio</Text>
+        <Text style={[styles.headerColumnText]}>Importe</Text>
+      </View>
+    </View>
+  );
 
-      {/* Lista de Ítems */}
+  const renderListFooter = () => (
+    <>
+      {items.length > 0 && (
+        <View>
+          {/* Total de la Venta */}
+          <Text style={styles.totalVentaText}>Total: ${total.toFixed(2)}</Text>
+
+          {/* Botón para agregar ítem */}
+          <TouchableOpacity style={styles.addButton} onPress={addItem}>
+            <Icon name="add" size={20} color="white" />
+            <Text style={styles.buttonText}>Agregar ítem</Text>
+          </TouchableOpacity>
+
+          <View style={styles.clearAndPrintbuttonsRow}>
+            {/* Botón para borrar todo */}
+            <TouchableOpacity style={styles.clearButton} onPress={clearAll}>
+              <Icon name="delete" size={20} color="white" />
+              <Text style={styles.buttonText}>Borrar Todo</Text>
+            </TouchableOpacity>
+            {/* Botón de Imprimir */}
+            <TouchableOpacity style={styles.printButton} onPress={printReceipt}>
+              <Icon name="print" size={20} color="white" />
+              <Text style={styles.buttonText}>Imprimir Ticket</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </>
+  );
+
+  const renderListEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyText}>No hay ítems en la lista</Text>
+      <TouchableOpacity style={styles.addButtonEmptyList} onPress={addItem}>
+        <Icon name="add" size={20} color="white" />
+        <Text style={styles.buttonText}>Agregar ítem</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderRowItem: ListRenderItem<Item> = ({item, index}) => {
+    const isLastItem = index === items.length - 1;
+    return (
+      <View style={styles.itemRowContainer}>
+        <View style={styles.itemNameInputContainer}>
+          <TextInput
+            ref={isLastItem ? inputRef : null}
+            style={styles.input}
+            placeholder="Item"
+            placeholderTextColor="gray"
+            value={item.name}
+            onChangeText={text => updateItem(item.id, 'name', text)}
+          />
+        </View>
+        <View style={styles.itemInputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Cantidad"
+            placeholderTextColor="gray"
+            keyboardType="numeric"
+            value={item.quantity}
+            onChangeText={text => updateItem(item.id, 'quantity', text)}
+          />
+        </View>
+        <View style={styles.itemInputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Precio"
+            placeholderTextColor="gray"
+            keyboardType="numeric"
+            value={item.unitPrice}
+            onChangeText={text => updateItem(item.id, 'unitPrice', text)}
+          />
+        </View>
+        <View style={styles.itemInputContainer}>
+          <Text style={styles.totalItemText}>{item.total.toFixed(2)}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => deleteItem(item.id)}>
+          <Icon name="delete" size={15} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.mainContainer}>
       <FlatList
+        ref={flatListRef}
         data={items}
         keyExtractor={item => item.id.toString()}
         renderItem={renderRowItem}
         ListHeaderComponent={renderListHeader}
+        ListFooterComponent={renderListFooter}
         ListEmptyComponent={renderListEmpty}
+        keyboardShouldPersistTaps="handled"
       />
-
-      {items.length > 0 && (
-        <View>
-          <View style={styles.buttonRow}>
-            {/* Botón para borrar todo */}
-            <TouchableOpacity style={styles.clearButton} onPress={clearAll}>
-              <Icon name="delete" size={20} color="white" />
-              <Text style={styles.addButtonText}>Borrar Todo</Text>
-            </TouchableOpacity>
-
-            {/* Botón para agregar ítem */}
-            <TouchableOpacity style={styles.addButton} onPress={addItem}>
-              <Icon name="add" size={20} color="white" />
-              <Text style={styles.addButtonText}>Agregar ítem</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Total de la Venta */}
-          <Text style={styles.totalVentaText}>Total: ${total.toFixed(2)}</Text>
-
-          {/* Botón de Imprimir */}
-          <TouchableOpacity style={styles.printButton} onPress={printReceipt}>
-            <Icon name="print" size={20} color="white" />
-            <Text style={styles.printButtonText}>Imprimir Ticket</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       <LoadingModal loading={loading} loadingText={loadingText} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -482,7 +510,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#fff',
   },
-  headerRowContainer: {
+  headerColumnsContainer: {
     flexDirection: 'row',
     backgroundColor: '#3E4E55', // Color contrastante
     justifyContent: 'space-between',
@@ -529,7 +557,7 @@ const styles = StyleSheet.create({
     paddingRight: 5,
   },
   deleteButton: {
-    backgroundColor: '#ff4d4d', // Red background for delete button
+    backgroundColor: '#ff4d4d',
     padding: 8,
     borderRadius: 5,
     alignItems: 'center',
@@ -549,16 +577,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 5,
   },
   totalVentaText: {
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginVertical: 10,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    marginVertical: 5,
   },
   addButton: {
     backgroundColor: '#007bff',
@@ -567,13 +593,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    marginLeft: 4,
+    marginVertical: 5,
   },
-  addButtonText: {
-    color: 'white',
-    fontSize: 16,
-    marginLeft: 5,
+  clearAndPrintbuttonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 5,
   },
   clearButton: {
     backgroundColor: '#f44336',
@@ -586,17 +611,19 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   printButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#28a745',
     padding: 12,
     borderRadius: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
+    marginLeft: 4,
   },
-  printButtonText: {
+  buttonText: {
     color: 'white',
     fontSize: 16,
-    marginLeft: 8,
+    marginLeft: 5,
   },
 });
 
