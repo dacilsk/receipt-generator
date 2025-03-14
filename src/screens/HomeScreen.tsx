@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useRef, useState } from 'react';
+import React, {useRef, useState} from 'react';
 import {
   Alert,
   FlatList,
@@ -20,8 +20,8 @@ import {
 } from 'react-native-bluetooth-escpos-printer';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LoadingModal from '../components/LoadingModal';
-import { formatDate } from '../utils/DateUtils';
-import { StringUtils } from '../utils/StringUtils';
+import {formatDate} from '../utils/DateUtils';
+import {StringUtils} from '../utils/StringUtils';
 
 // Definimos la estructura de un ítem
 interface Item {
@@ -412,46 +412,46 @@ function HomeScreen(): React.JSX.Element {
   );
 
   const renderRowItem: ListRenderItem<Item> = ({item}) => (
-      <View style={styles.itemRowContainer}>
-        <View style={styles.itemNameInputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Item"
-            placeholderTextColor="gray"
-            value={item.name}
-            onChangeText={text => updateItem(item.id, 'name', text)}
-          />
-        </View>
-        <View style={styles.itemInputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Cantidad"
-            placeholderTextColor="gray"
-            keyboardType="numeric"
-            value={item.quantity}
-            onChangeText={text => updateItem(item.id, 'quantity', text)}
-          />
-        </View>
-        <View style={styles.itemInputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Precio"
-            placeholderTextColor="gray"
-            keyboardType="numeric"
-            value={item.unitPrice}
-            onChangeText={text => updateItem(item.id, 'unitPrice', text)}
-          />
-        </View>
-        <View style={styles.itemInputContainer}>
-          <Text style={styles.totalItemText}>{item.total.toFixed(2)}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => deleteItem(item.id)}>
-          <Icon name="delete" size={15} color="#fff" />
-        </TouchableOpacity>
+    <View style={styles.itemRowContainer}>
+      <View style={styles.itemNameInputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Item"
+          placeholderTextColor="gray"
+          value={item.name}
+          onChangeText={text => updateItem(item.id, 'name', text)}
+        />
       </View>
-    );
+      <View style={styles.itemInputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Cantidad"
+          placeholderTextColor="gray"
+          keyboardType="numeric"
+          value={item.quantity}
+          onChangeText={text => updateItem(item.id, 'quantity', text)}
+        />
+      </View>
+      <View style={styles.itemInputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Precio"
+          placeholderTextColor="gray"
+          keyboardType="numeric"
+          value={item.unitPrice}
+          onChangeText={text => updateItem(item.id, 'unitPrice', text)}
+        />
+      </View>
+      <View style={styles.itemInputContainer}>
+        <Text style={styles.totalItemText}>{item.total.toFixed(2)}</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => deleteItem(item.id)}>
+        <Icon name="delete" size={15} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
