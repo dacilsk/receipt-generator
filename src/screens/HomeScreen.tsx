@@ -458,6 +458,7 @@ function HomeScreen(): React.JSX.Element {
         ListFooterComponent={renderListFooter}
         ListEmptyComponent={renderListEmpty}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.itemListContainer}
       />
       <LoadingModal loading={loading} loadingText={loadingText} />
     </KeyboardAvoidingView>
@@ -558,6 +559,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginVertical: 5,
+  },
+  itemListContainer: {
+    paddingBottom: 100,
   },
   totalVentaText: {
     fontSize: 20,
