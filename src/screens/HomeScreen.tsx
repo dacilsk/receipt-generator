@@ -20,17 +20,9 @@ import {
 } from 'react-native-bluetooth-escpos-printer';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LoadingModal from '../components/LoadingModal';
+import {Item} from '../types/Item';
 import {formatDate} from '../utils/DateUtils';
 import {StringUtils} from '../utils/StringUtils';
-
-// Definimos la estructura de un ítem
-interface Item {
-  id: number;
-  name: string;
-  quantity: string;
-  unitPrice: string;
-  total: number;
-}
 
 function HomeScreen(): React.JSX.Element {
   const [customerName, setCustomerName] = useState<string>('');
