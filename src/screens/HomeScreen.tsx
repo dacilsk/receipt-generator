@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -20,8 +20,8 @@ import {
 } from 'react-native-bluetooth-escpos-printer';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import LoadingModal from '../components/LoadingModal';
-import {formatDate} from '../utils/DateUtils';
-import {StringUtils} from '../utils/StringUtils';
+import { formatDate } from '../utils/DateUtils';
+import { StringUtils } from '../utils/StringUtils';
 
 // Definimos la estructura de un ítem
 interface Item {
@@ -38,16 +38,7 @@ function HomeScreen(): React.JSX.Element {
   const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [loadingText, setLoadingText] = useState('');
-  const inputRef = useRef(null);
   const flatListRef = useRef(null);
-
-  useEffect(() => {
-    setTimeout(() => {
-      if (inputRef.current && items.length > 0) {
-        inputRef.current.focus();
-      }
-    }, 0);
-  }, [items]);
 
   const addItem = () => {
     const newItem = {
@@ -420,13 +411,10 @@ function HomeScreen(): React.JSX.Element {
     </View>
   );
 
-  const renderRowItem: ListRenderItem<Item> = ({item, index}) => {
-    const isLastItem = index === items.length - 1;
-    return (
+  const renderRowItem: ListRenderItem<Item> = ({item}) => (
       <View style={styles.itemRowContainer}>
         <View style={styles.itemNameInputContainer}>
           <TextInput
-            ref={isLastItem ? inputRef : null}
             style={styles.input}
             placeholder="Item"
             placeholderTextColor="gray"
@@ -464,7 +452,6 @@ function HomeScreen(): React.JSX.Element {
         </TouchableOpacity>
       </View>
     );
-  };
 
   return (
     <KeyboardAvoidingView
